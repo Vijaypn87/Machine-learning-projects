@@ -8,7 +8,6 @@ A collection of Machine Learning projects built using **Python**, **Scikit-learn
 
 - 🧠 Brainstroke Predictor
 - 🌾 Crop Recommendation
-- ❤️ Heart Disease Prediction
 - 🚗 Insurance Fraud Prediction
 - ⛰️ Landslide Prediction
 - 🫁 Lung Cancer Prediction
@@ -50,7 +49,6 @@ Machine-Learning-Projects/
 │
 ├── Brainstroke-Predictor/
 ├── Crop-Recommendation/
-├── Heart-Disease-Prediction/
 ├── Insurance-Fraud-Prediction/
 ├── Landslide-Prediction/
 ├── Lung-Cancer-Prediction/
