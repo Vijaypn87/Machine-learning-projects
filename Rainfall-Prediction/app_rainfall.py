@@ -11,6 +11,7 @@
 import pandas as pd
 import numpy as np
 import pickle
+import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -69,19 +70,35 @@ from sklearn.tree import DecisionTreeClassifier
 
 # df.to_csv("preprocessed_1.csv", index=False)
 
-df_loaded = pd.read_csv('preprocessed_1.csv')
+df_loaded = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'preprocessed_1.csv'))
 x = df_loaded.drop(["RainTomorrow", "Date"], axis=1)
 y = df_loaded["RainTomorrow"]
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 0)
 
-print("The number of classes after fit {}".format(Counter(y_train)))
+print("The number of classes before SMOTE {}".format(Counter(y_train)))
 sm=SMOTE(random_state=0)
 x_train, y_train = sm.fit_resample(x_train, y_train)
-print("The number of classes before fit {}".format(Counter(y_train)))
+print("The number of classes after SMOTE {}".format(Counter(y_train)))
 
 sc = StandardScaler()
 x_train_sc = sc.fit_transform(x_train)
 x_test_sc = sc.transform(x_test)
+
+SVM_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'svm_model_saved.sav')
+
+
+def load_or_train_svm():
+       # The saved model file is not in the repository. SVM is slow on the full training set,
+       # so the first run trains on a random sample of 20,000 rows and saves the model for next time.
+       if os.path.exists(SVM_PATH):
+              with open(SVM_PATH, 'rb') as f:
+                     return pickle.load(f)
+       rng = np.random.RandomState(0)
+       idx = rng.choice(len(x_train_sc), size=min(20000, len(x_train_sc)), replace=False)
+       model = SVC().fit(x_train_sc[idx], np.asarray(y_train)[idx])
+       with open(SVM_PATH, 'wb') as f:
+              pickle.dump(model, f)
+       return model
 
        #CREATING A STREAMLIT PAGE & INTEGRATING THE ML MODELS
 import streamlit as st #package used to create webpage
@@ -103,16 +120,7 @@ with c1:
                    'Richmond': 37, 'WaggaWagga': 38, 'Townsville': 39, 'PearceRAAF': 40, 'SalmonGums': 41,
                    'Moree': 42, 'Cobar': 43, 'Mildura': 44, 'Katherine': 45, 'AliceSprings': 46, 'Nhil': 47,
                    'Woomera': 48, 'Uluru': 49}
-       Location = st.selectbox('ENTER LOCATION',options={'Albury', 'BadgerysCreek', 'Cobar', 'CoffsHarbour', 'Moree',
-       'Newcastle', 'NorahHead', 'NorfolkIsland', 'Penrith', 'Richmond',
-       'Sydney', 'SydneyAirport', 'WaggaWagga', 'Williamtown',
-       'Wollongong', 'Canberra', 'Tuggeranong', 'MountGinini', 'Ballarat',
-       'Bendigo', 'Sale', 'MelbourneAirport', 'Melbourne', 'Mildura',
-       'Nhil', 'Portland', 'Watsonia', 'Dartmoor', 'Brisbane', 'Cairns',
-       'GoldCoast', 'Townsville', 'Adelaide', 'MountGambier', 'Nuriootpa',
-       'Woomera', 'Albany', 'Witchcliffe', 'PearceRAAF', 'PerthAirport',
-       'Perth', 'SalmonGums', 'Walpole', 'Hobart', 'Launceston',
-       'AliceSprings', 'Darwin', 'Katherine', 'Uluru'})
+       Location = st.selectbox('ENTER LOCATION',options=sorted(location2))
        Location = location2[Location]#cnverts text inout from user into number input
 
        MinTemp = st.number_input('ENTER MIN TEMP')
@@ -169,10 +177,10 @@ if submit:#if the submit button is clicked
               st.error("ACCURACY OF THE MODEL IS : {0}%".format(round(accuracy_score(y_test, knn_pred), 2) * 100))
               st.warning("PRECISION OF THE MODEL IS : {0}%".format(round(precision_score(y_test, knn_pred), 2) * 100))
               st.info("F1 SCORE OF THE MODEL IS : : {0}%".format(round(f1_score(y_test, knn_pred), 2) * 100))
-              st.success("R2 SCORE OF THE MODEL IS : : {0}%".format(round(recall_score(y_test, knn_pred), 2) * 100))
+              st.success("RECALL OF THE MODEL IS : : {0}%".format(round(recall_score(y_test, knn_pred), 2) * 100))
 
               st.header('REPORT')
-              report1 = classification_report(y_test, knn_pred, target_names=['rainy', 'sunny'],output_dict=True)#creating a classification report
+              report1 = classification_report(y_test, knn_pred, target_names=['no rain', 'rain'],output_dict=True)#creating a classification report
               report1_df_loaded = pd.DataFrame(report1).transpose()#converting to dataframe
               st.dataframe(report1_df_loaded, height=212, width=1000)#displaying dataframe on webpage
 
@@ -189,9 +197,8 @@ if submit:#if the submit button is clicked
 
               # some time later...
 
-              # load the model from disk
-              filename = 'svm_model_saved.sav'
-              svc_loaded = pickle.load(open(filename, 'rb'))
+              # load the model from disk; if it isn't there yet, train it once and save it
+              svc_loaded = load_or_train_svm()
               svc_loaded_pred = svc_loaded.predict(x_test_sc)
 
               svc_res = svc_loaded.predict(sc.transform(new))
@@ -208,11 +215,11 @@ if submit:#if the submit button is clicked
                      round(precision_score(y_test, svc_loaded_pred), 2) * 100))
               st.info("F1 SCORE OF THE MODEL IS : : {0}%".format(
                      round(f1_score(y_test, svc_loaded_pred), 2) * 100))
-              st.success("R2 SCORE OF THE MODEL IS : : {0}%".format(
+              st.success("RECALL OF THE MODEL IS : : {0}%".format(
                      round(recall_score(y_test, svc_loaded_pred), 2) * 100))
 
               st.header('REPORT')
-              report2 = classification_report(y_test, svc_loaded_pred, target_names=['rainy', 'sunny'],
+              report2 = classification_report(y_test, svc_loaded_pred, target_names=['no rain', 'rain'],
                                               output_dict=True)
               report2_df_loaded = pd.DataFrame(report2).transpose()
               st.dataframe(report2_df_loaded, height=212, width=1000)
@@ -239,10 +246,10 @@ if submit:#if the submit button is clicked
                      round(precision_score(y_test, lr_pred), 2) * 100))
               st.info("F1 SCORE OF THE MODEL IS : : {0}%".format(round(f1_score(y_test, lr_pred), 2) * 100))
               st.success(
-                     "R2 SCORE OF THE MODEL IS : : {0}%".format(round(recall_score(y_test, lr_pred), 2) * 100))
+                     "RECALL OF THE MODEL IS : : {0}%".format(round(recall_score(y_test, lr_pred), 2) * 100))
 
               st.header('REPORT')
-              report3 = classification_report(y_test, lr_pred, target_names=['rainy', 'sunny'], output_dict=True)
+              report3 = classification_report(y_test, lr_pred, target_names=['no rain', 'rain'], output_dict=True)
               report3_df_loaded = pd.DataFrame(report3).transpose()
               st.dataframe(report3_df_loaded, height=212, width=1000)
 
@@ -254,7 +261,7 @@ if submit:#if the submit button is clicked
               dt_pred = dt.predict(x_test_sc)
               dt_res = dt.predict(sc.transform(new))
 
-              st.header('RESULTS OF LOG REGRESSION')
+              st.header('RESULTS OF DECISION TREE')
               if dt_res == 0:
                      st.info('THERE IS NO POSSIBILITY OF RAIN TOMORROW')
               else:
@@ -267,10 +274,10 @@ if submit:#if the submit button is clicked
                      round(precision_score(y_test, dt_pred), 2) * 100))
               st.info("F1 SCORE OF THE MODEL IS : : {0}%".format(round(f1_score(y_test, dt_pred), 2) * 100))
               st.success(
-                     "R2 SCORE OF THE MODEL IS : : {0}%".format(round(recall_score(y_test, dt_pred), 2) * 100))
+                     "RECALL OF THE MODEL IS : : {0}%".format(round(recall_score(y_test, dt_pred), 2) * 100))
 
               st.header('REPORT')
-              report4 = classification_report(y_test, dt_pred, target_names=['rainy', 'sunny'], output_dict=True)
+              report4 = classification_report(y_test, dt_pred, target_names=['no rain', 'rain'], output_dict=True)
               report4_df_loaded = pd.DataFrame(report4).transpose()
               st.dataframe(report4_df_loaded, height=212, width=1000)
 

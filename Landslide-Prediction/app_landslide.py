@@ -1,6 +1,5 @@
 #processing data
 import pandas as pd
-import chardet
 
 data = pd.read_csv("G2_landslide.csv")
 
@@ -93,13 +92,13 @@ if submit:
         import matplotlib.pyplot as plt
 
         st.title("LANDSLIDE")
-        if rf_new_user_input_prediction == 0:
+        if rf_new_user_input_prediction[0] == 0:
             st.success("NO LANDSLIDE")
         else:
             st.error("POSSIBILITY OF LANDSLIDE")
 
         fig, ax = plt.subplots()
-        ax.pie(rf_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(rf_probabilistic[0], labels=['NO LANDSLIDE', 'LANDSLIDE'], autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -131,13 +130,13 @@ if submit:
         import matplotlib.pyplot as plt
 
         st.title("LANDSLIDE")
-        if knn_new_user_input_prediction == 0:
+        if knn_new_user_input_prediction[0] == 0:
             st.success("NO LANDSLIDE")
         else:
             st.error("POSSIBILITY OF LANDSLIDE")
 
         fig, ax = plt.subplots()
-        ax.pie(knn_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(knn_probabilistic[0], labels=['NO LANDSLIDE', 'LANDSLIDE'], autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -170,13 +169,13 @@ if submit:
 
         st.title("LANDSLIDE")
 
-        if dt_new_user_input_prediction == 0:
+        if dt_new_user_input_prediction[0] == 0:
             st.success("NO LANDSLIDE")
         else:
             st.error("POSSIBILITY OF LANDSLIDE")
 
         fig, ax = plt.subplots()
-        ax.pie(dt_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(dt_probabilistic[0], labels=['NO LANDSLIDE', 'LANDSLIDE'], autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -208,13 +207,13 @@ if submit:
 
         st.title("LANDSLIDE")
 
-        if xgb_new_user_input_prediction == 0:
+        if xgb_new_user_input_prediction[0] == 0:
             st.success("NO LANDSLIDE")
         else:
             st.error("POSSIBILITY OF LANDSLIDE")
 
         fig, ax = plt.subplots()
-        ax.pie(xgb_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(xgb_probabilistic[0], labels=['NO LANDSLIDE', 'LANDSLIDE'], autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -233,26 +232,29 @@ if submit:
     elif option == "MODEL GRAPHS":
         import matplotlib.pyplot as plt
 
-        models = ["SVM", "KNN", "Decision Tree", "XGBoost"]
-        accuracies = [57.4, 66.6, 66.6, 81.4]
-        precisions = [61.5, 68.1, 65.3, 86.3]
+        from sklearn.metrics import accuracy_score, precision_score
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.tree import DecisionTreeClassifier
+        from xgboost import XGBClassifier
+        # scores are computed from the models on the test set, not typed in
+        candidates = {"Random Forest": RandomForestClassifier(random_state=0), "KNN": KNeighborsClassifier(), "Decision Tree": DecisionTreeClassifier(random_state=0), "XGBoost": XGBClassifier()}
+        models, accuracies, precisions = [], [], []
+        for name, model in candidates.items():
+            pred = model.fit(x_train, y_train).predict(x_test)
+            models.append(name)
+            accuracies.append(accuracy_score(y_test, pred) * 100)
+            precisions.append(precision_score(y_test, pred, average='binary', zero_division=0) * 100)
 
-        # Create a bar plot for accuracies
-        plt.figure(figsize=(8, 6))
-        plt.bar(models, accuracies,color='red')
-        plt.xlabel('Models')
-        plt.ylabel('Accuracy (%)')
-        plt.title('Accuracy Comparison')
-        st.pyplot(plt)
+        for values, metric, color in [(accuracies, 'Accuracy', 'red'), (precisions, 'Precision', None)]:
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.bar(models, values, color=color)
+            ax.set_ylim(0, 100)
+            ax.set_xlabel('Models')
+            ax.set_ylabel(metric + ' (%)')
+            ax.set_title(metric + ' Comparison')
+            st.pyplot(fig)
 
-        # Create a bar plot for precisions
-        plt.figure(figsize=(8, 6))
-        plt.bar(models, precisions)
-        plt.xlabel('Models')
-        plt.ylabel('Precision (%)')
-        plt.title('Precision Comparison')
-        st.pyplot(plt)
-
-        st.subheader("By Visual Comparison XGBOOST is th best")
+        st.subheader(f"Best accuracy on the test set: {models[accuracies.index(max(accuracies))]}")
 else:
     st.error("CLICK SUBMIT BUTTON")

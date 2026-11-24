@@ -1,218 +1,102 @@
 #IMPORTING ALL THE NECESSARY LIBRARIES
+from pathlib import Path
+
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import LabelEncoder
 import streamlit as st
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+
+DATA_PATH = Path(__file__).parent / 'insurance_claims_mod.csv'
+
+CATEGORICAL = ['insured_sex', 'insured_occupation', 'insured_relationship', 'incident_severity',
+               'property_damage', 'police_report_available', 'collision_type', 'policy_state',
+               'insured_education_level', 'auto_make', 'auto_year']
 
 
-#DATA PREPROCESSING
+#DATA PREPROCESSING & TRAINING (cached so it runs once, not on every click)
+@st.cache_resource
+def train_model():
+    df_org = pd.read_csv(DATA_PATH)
+    df_org = df_org.replace('?', 'UNKNOWN')  # missing values are stored as '?' in the dataset
 
-le = LabelEncoder()
-df = pd.read_csv('insurance_claims_mod.csv')
-print(df.shape)
+    df = df_org.copy()
+    #one encoder PER column, kept so the user's input is encoded exactly like the training data
+    encoders = {}
+    for col in CATEGORICAL:
+        encoders[col] = LabelEncoder().fit(df[col])
+        df[col] = encoders[col].transform(df[col])
+    df['fraud_reported'] = df['fraud_reported'].map({'N': 0, 'Y': 1})
 
-df_org = pd.read_csv('insurance_claims_mod.csv')
-df.replace('?','UNKNOWN')
+    x = df.drop(columns='fraud_reported')
+    y = df['fraud_reported']
+    X_train, X_test, Y_train, Y_test = train_test_split(x, y, test_size=0.4, random_state=0, stratify=y)
+
+    # Feature scaling: fit on the training data only, then apply the same scaling to the test data
+    sc = StandardScaler()
+    X_train = sc.fit_transform(X_train)
+    X_test = sc.transform(X_test)
+
+    # class_weight='balanced' because only about 25% of claims are fraud; without it the model
+    # mostly predicts "no fraud"
+    model = LogisticRegression(random_state=0, class_weight='balanced')
+    model.fit(X_train, Y_train)
+    return df_org, list(x.columns), encoders, sc, model, Y_test, model.predict(X_test)
 
 
-df['insured_sex'] = le.fit_transform(df['insured_sex'])
-df['insured_occupation'] = le.fit_transform(df['insured_occupation'])
-df['insured_relationship'] = le.fit_transform(df['insured_relationship'])
-df['incident_severity'] = le.fit_transform(df['incident_severity'])
-df['property_damage'] = le.fit_transform(df['property_damage'])
-df['police_report_available'] = le.fit_transform(df['police_report_available'])
-df['collision_type'] = le.fit_transform(df['collision_type'])
-df['insured_education_level'] = le.fit_transform(df['insured_education_level'])
-df['fraud_reported'] = le.fit_transform(df['fraud_reported'])
-df['policy_state'] = le.fit_transform(df['policy_state'])
-df['auto_make'] = le.fit_transform(df['auto_make'])
-df['auto_year'] = le.fit_transform(df['auto_year'])
+df_org, feature_columns, encoders, sc, model, Y_test, y_pred = train_model()
 
-print(df)
-print(df['insured_occupation'].unique())
-print(df_org['insured_occupation'].unique())
-
-x = df.iloc[:,:-1].values #independent values
-y = df.iloc[:,-1].values #depenedent value
-
-X_train,X_test,Y_train,Y_test = train_test_split(x,y,test_size=0.4,random_state=0)
-
-# """### Feature Scaling
-# ### we scale our data to make all the features contribute equally to the result
-# ###Fit_Transform - fit method is calculating the mean and variance of each of the features present in our data
-# ###Transform - Transform method is transforming all the features using the respective mean and variance,
-# ###We want our test data to be a completely new and a surprise set for our model
-# """
-sc = StandardScaler()
-X_train = sc.fit_transform(X_train)
-X_test = sc.transform(X_test)
-
-# #creating seaborn environment
-import seaborn as sns
-sns.color_palette("Spectral", as_cmap=True)
-plt.style.use('fivethirtyeight')
-ax = sns.countplot(x='fraud_reported', data=df_org, hue='fraud_reported')
-plt.show()
-
-print(df['insured_sex'].unique())
-print(df_org['insured_sex'].unique())
 
 #creating a streamlit page
-
 st.title("INSURANCE FRAUD PREDICTOR")
 st.sidebar.title("INPUT PARAMETERS")
 
-age = st.sidebar.number_input("ENTER AGE : ",step=1,min_value=5)
+LABELS = {'insured_sex': 'ENTER SEX', 'insured_occupation': 'ENTER OCCUPATION : ',
+          'insured_relationship': 'ENTER INSURED RELATIONSHIP : ', 'incident_severity': 'ENTER INCIDENT SEVERITY : ',
+          'property_damage': 'ENTER PROPERTY DAMAGE : ', 'police_report_available': 'IS POLICE REPORT AVAILABLE : ',
+          'collision_type': 'ENTER COLLISION TYPE : ', 'policy_state': 'ENTER POLICY STATE : ',
+          'insured_education_level': 'ENTER INSURED EDUCATION LEVEL : ', 'auto_make': 'ENTER AUTO MAKE : ',
+          'auto_year': 'ENTER AUTO YEAR : '}
 
+user_input = {'age': st.sidebar.number_input("ENTER AGE : ", step=1, min_value=18, max_value=100, value=40)}
+for col in CATEGORICAL:
+    choice = st.sidebar.selectbox(LABELS[col], options=list(encoders[col].classes_))
+    user_input[col] = encoders[col].transform([choice])[0]
 
-insured_sex1={'MALE':'1','FEMALE':'0'}
-insured_sex = st.sidebar.selectbox("ENTER SEX",options={'MALE','FEMALE'})
-insured_sex=insured_sex1[insured_sex]
+new = pd.DataFrame([user_input])[feature_columns]  # same column order as training
+result = model.predict(sc.transform(new))[0]
 
-insured_occupation1 = {'craft-repair':'2', 'machine-op-inspct':'6', 'sales':'11', 'armed-forces':'1',
-       'tech-support':'12', 'prof-specialty':'9', 'other-service':'7',
-       'priv-house-serv':'8', 'exec-managerial':'3', 'protective-serv':'10',
-       'transport-moving':'13', 'handlers-cleaners':'5', 'adm-clerical':'0',
-       'farming-fishing':'4'}
-insured_occupation = st.sidebar.selectbox("ENTER OCCUPATION : ",options={'craft-repair':'2', 'machine-op-inspct':'6', 'sales':'11', 'armed-forces':'1',
-       'tech-support':'12', 'prof-specialty':'9', 'other-service':'7',
-       'priv-house-serv':'8', 'exec-managerial':'3', 'protective-serv':'10',
-       'transport-moving':'13', 'handlers-cleaners':'5', 'adm-clerical':'0',
-       'farming-fishing':'4'})
-insured_occupation = insured_occupation1[insured_occupation]
-
-insured_relationship1 = {'husband':'0', 'other-relative':'2', 'own-child':'3', 'unmarried':'4', 'wife':'5',
-       'not-in-family':'1'}
-insured_relationship = st.sidebar.selectbox("ENTER INSURED RELATIONSHIP : ",options={'husband':'0', 'other-relative':'2', 'own-child':'3', 'unmarried':'4', 'wife':'5',
-       'not-in-family':'1'})
-insured_relationship = insured_relationship1[insured_relationship]
-
-incident_severity1 = {'Major Damage':'0', 'Minor Damage':'1', 'Total Loss':'2', 'Trivial Damage':'3'}
-incident_severity = st.sidebar.selectbox("ENTER INSURED SEVERITY : ",options={'Major Damage':'0', 'Minor Damage':'1', 'Total Loss':'2', 'Trivial Damage':'3'})
-incident_severity = incident_severity1[incident_severity]
-
-property_damage1 = {'YES':'2', 'UNKNOWN':'0', 'NO':'1'}
-property_damage = st.sidebar.selectbox("ENTER PROPERTY DAMAGE : ",options={'YES':'2', 'UNKNOWN':'0', 'NO':'1'})
-property_damage = property_damage1[property_damage]
-
-police_report_available1 = {'YES':'2', 'UNKNOWN':'0', 'NO':'1'}
-police_report_available = st.sidebar.selectbox("IS POLICE REPORT AVAILABLE : ",options={'YES':'2', 'UNKNOWN':'0', 'NO':'1'})
-police_report_available = police_report_available1[police_report_available]
-
-collision_type1 = {'Side Collision':'3', 'UNKNOWN':'0', 'Rear Collision':'2', 'Front Collision':'1'}
-collision_type = st.sidebar.selectbox("ENTER COLLISION TYPE : ",options={'Side Collision':'3', 'UNKNOWN':'0', 'Rear Collision':'2', 'Front Collision':'1'})
-collision_type = collision_type1[collision_type]
-
-policy_state1 = {'OH':'2', 'IN':'1', 'IL':'0'}
-policy_state = st.sidebar.selectbox("ENTER POLICY STATE : ",options={'OH':'2', 'IN':'1', 'IL':'0'})
-policy_state = policy_state1[policy_state]
-
-insured_education_level1 = {'MD':'4', 'PhD':'6', 'Associate':'0', 'Masters':'5', 'High School':'2', 'College':'1',
-       'JD':'3'}
-insured_education_level = st.sidebar.selectbox("ENTER INSURED EDUCATION LEVEL : ",options={'MD':'4', 'PhD':'6', 'Associate':'0', 'Masters':'5', 'High School':'2', 'College':'1',
-       'JD':'3'})
-insured_education_level = insured_education_level1[insured_education_level]
-
-
-auto_make1 = {'Saab':'10', 'Mercedes':'8', 'Dodge':'4', 'Chevrolet':'3', 'Accura':'0', 'Nissan':'9',
-       'Audi':'1', 'Toyota':'12', 'Ford':'5', 'Suburu':'11', 'BMW':'2', 'Jeep':'7', 'Honda':'6',
-       'Volkswagen':'13'}
-auto_make = st.sidebar.selectbox("ENTER AUTO MAKE : ",options={'Saab':'10', 'Mercedes':'8', 'Dodge':'4', 'Chevrolet':'3', 'Accura':'0', 'Nissan':'9',
-       'Audi':'1', 'Toyota':'12', 'Ford':'5', 'Suburu':'11', 'BMW':'2', 'Jeep':'7', 'Honda':'6',
-       'Volkswagen':'13'})
-auto_make = auto_make1[auto_make]
-
-auto_year1 = {2004:'9', 2007:'12', 2014:'19', 2009:'14', 2003:'8', 2012:'17', 2015:'20', 1996:'1', 2002:'7', 2006:'11', 2000:'5',
-       2010:'15', 1999:'4', 2011:'16', 2005:'10', 2008:'13', 1995:'0', 2001:'6', 1998:'3', 1997:'2', 2013:'18'}
-auto_year = st.sidebar.selectbox("ENTER AUTO YEAR : ",options={2004:'9', 2007:'12', 2014:'19', 2009:'14', 2003:'8', 2012:'17', 2015:'20', 1996:'1', 2002:'7', 2006:'11', 2000:'5',
-       2010:'15', 1999:'4', 2011:'16', 2005:'10', 2008:'13', 1995:'0', 2001:'6', 1998:'3', 1997:'2', 2013:'18'})
-auto_year = auto_year1[auto_year]
-
-#TRAINING THE MODEL
-model = LogisticRegression(random_state=0)
-model.fit(X_train,Y_train)
-
-new = [[age,insured_sex,insured_occupation,insured_relationship,incident_severity,property_damage,police_report_available,collision_type,policy_state,insured_education_level,auto_make,auto_year]]
-result = model.predict(sc.transform(new))
-print(result)
-
-# #PRINTING MODEL PARAMETERS
-from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score,f1_score
-from sklearn.metrics import classification_report
-y_pred = model.predict(X_test)
-cm = confusion_matrix(Y_test,y_pred)
-print(cm)
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    pass
-with col2:
-    submit = st.sidebar.button("SUBMIT")
-with col3 :
-    pass
+submit = st.sidebar.button("SUBMIT")
 
 if submit:
     if result == 0:
-      st.success('NO FRAUD HAPPEND')
-      st.subheader('CLASSIFICATION REPORT')
-
+        st.success('NO FRAUD DETECTED')
     else:
-      st.error('YES FRAUD HAPPEND')
+        st.error('POSSIBLE FRAUD DETECTED')
 
-    tab1, tab2,tab3 = st.tabs(['MODEL PARAMETERS', 'CLASSIFICATION REPORT', 'MODEL GRAPHS'])
+    tab1, tab2, tab3 = st.tabs(['MODEL PARAMETERS', 'CLASSIFICATION REPORT', 'MODEL GRAPHS'])
     with tab1:
         st.header('MODEL PARAMETERS')
-        st.info("ACCURACY : {0}%".format(accuracy_score(Y_test, y_pred) * 100))
-        st.info("PRECISION : {0}%".format(precision_score(Y_test, y_pred) * 100))
-        st.info("RECALL : {0}%".format(recall_score(Y_test, y_pred) * 100))
-        st.info("F1 SCORE : {0}%".format(f1_score(Y_test, y_pred) * 100))
+        st.info("ACCURACY : {0:.1f}%".format(accuracy_score(Y_test, y_pred) * 100))
+        st.info("PRECISION : {0:.1f}%".format(precision_score(Y_test, y_pred, zero_division=0) * 100))
+        st.info("RECALL : {0:.1f}%".format(recall_score(Y_test, y_pred) * 100))
+        st.info("F1 SCORE : {0:.1f}%".format(f1_score(Y_test, y_pred) * 100))
     with tab2:
         st.header('CLASSIFICATION REPORT')
-        report = classification_report(Y_test, y_pred, output_dict=True)
-        report_df = pd.DataFrame(report).transpose()
-        st.dataframe(report_df, height=212, width=1000)
+        report = classification_report(Y_test, y_pred, target_names=['no fraud', 'fraud'], output_dict=True, zero_division=0)
+        st.dataframe(pd.DataFrame(report).transpose(), height=212, width=1000)
     with tab3:
         st.header('MODEL GRAPHS')
+        st.caption('Number of claims in each group, split by whether fraud was reported.')
         plt.style.use('fivethirtyeight')
-        fig = plt.figure(figsize=(10, 6))
-        ax = df_org.groupby('insured_sex').fraud_reported.count().plot.bar(ylim=0)
-        ax.set_ylabel('Fraud reported')
-        st.pyplot(fig=fig)
-
-        plt.style.use('fivethirtyeight')
-        fig = plt.figure(figsize=(10, 6))
-        ax = df_org.groupby('insured_occupation').fraud_reported.count().plot.pie(ylim=0)
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=20, ha="right")
-        ax.set_ylabel('Fraud reported')
-        st.pyplot(fig=fig)
-
-        plt.style.use('fivethirtyeight')
-        fig = plt.figure(figsize=(10, 6))
-        ax = df_org.groupby('incident_severity').fraud_reported.count().plot.bar(ylim=0)
-        ax.set_ylabel('Fraud reported')
-        st.pyplot(fig=fig)
-
-        plt.style.use('fivethirtyeight')
-        fig = plt.figure(figsize=(10, 6))
-        ax = df_org.groupby('police_report_available').fraud_reported.count().plot.bar(ylim=0)
-        ax.set_ylabel('Fraud reported')
-        st.pyplot(fig=fig)
-
-        plt.style.use('fivethirtyeight')
-        fig = plt.figure(figsize=(10, 6))
-        ax = df_org.groupby('collision_type').fraud_reported.count().plot.bar(ylim=0)
-        ax.set_ylabel('Fraud reported')
-        st.pyplot(fig=fig)
-
-
-
+        for col in ['insured_sex', 'insured_occupation', 'incident_severity', 'police_report_available', 'collision_type']:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            pd.crosstab(df_org[col], df_org['fraud_reported']).plot.bar(ax=ax)
+            ax.set_ylabel('Number of claims')
+            ax.tick_params(axis='x', labelrotation=20)
+            st.pyplot(fig)
 
 else:
     st.error('COMPLETE ALL PARAMETERS')
-
-
-
-

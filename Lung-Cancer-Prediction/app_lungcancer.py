@@ -26,11 +26,9 @@ import streamlit as st
 st.title("LUNG CANCER PREDICTION")
 
 gender = st.selectbox("GENDER",options=["M","F"])
-if gender == "M":
-    gender=1
-else:
-    gender=0
-age = st.number_input("ENTER YOUR AGE",step=1)
+gender = {"M": 1, "F": 2}[gender]  # same coding as the training data (M=1, F=2)
+age = st.number_input("ENTER YOUR AGE",min_value=1,max_value=120,value=50,step=1)
+st.caption("For the yes/no questions below: 1 = NO, 2 = YES (the coding used in the dataset).")
 smoking = st.selectbox("SMOKING",options=[1,2])
 yellowfinger = st.selectbox("YELLOW_FINGERS",options=[1,2])
 anxiety = st.selectbox("ANXIETY",options=[1,2])
@@ -45,11 +43,22 @@ shortnessofbreath = st.selectbox("SHORTNESS OF BREATH",options=[1,2])
 swallowingdifficult = st.selectbox("SWALLOWING DIFFICULT",options=[1,2])
 chestpain = st.selectbox("CHEST PAIN",options=[1,2])
 
-new_user_input = [[age,gender,smoking,yellowfinger,
+new_user_input = [[gender,age,smoking,yellowfinger,
                    anxiety,peerpressure,chronicdisease,
                    fatigue,allergy,wheezing,alcoholconsuming,
                    coughing,shortnessofbreath,swallowingdifficult,
                    chestpain]]
+
+def show_result(prediction):
+    if prediction[0] == 1:
+        st.error("POSSIBILITY OF LUNG CANCER DETECTED : PLEASE CONSULT A DOCTOR")
+    else:
+        st.success("NO POSSIBILITY OF LUNG CANCER DETECTED")
+
+
+def label_pie(ax, probabilities):
+    ax.pie(probabilities, labels=["NO CANCER", "CANCER"], autopct='%1.1f%%', startangle=90)
+
 
 from streamlit_option_menu import option_menu
 with st.sidebar:
@@ -71,7 +80,8 @@ if submit:
         # st.info(svc_probabilistic)
 
         # Extracting predicted probabilities for the positive class (class 1)
-        positive_probs = svc_probabilistic[0]  # Assuming there's only one prediction for new_user_input
+        positive_probs = svc_probabilistic[0]
+        show_result(svc_new_user_input_prediction)
 
         # Generating labels for the pie chart
         # labels = [f'Class {i + 1}' for i in range(len(positive_probs))]
@@ -82,7 +92,7 @@ if submit:
         st.title("DIAGONISIS")
 
         fig, ax = plt.subplots()
-        ax.pie(svc_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        label_pie(ax, svc_probabilistic[0])
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -109,14 +119,15 @@ if submit:
         knn_new_user_input_prediction = knn.predict(new_user_input)  # predicting result for new user input
         knn_probabilistic = knn.predict_proba(new_user_input)  # getting probabilities for each class
 
-        positive_probs = knn_probabilistic[0]  # Assuming there's only one prediction for new_user_input
+        positive_probs = knn_probabilistic[0]
+        show_result(knn_new_user_input_prediction)
 
         import matplotlib.pyplot as plt
 
         st.title("DIAGONISIS")
 
         fig, ax = plt.subplots()
-        ax.pie(knn_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        label_pie(ax, knn_probabilistic[0])
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -142,15 +153,15 @@ if submit:
         dt_new_user_input_prediction = dt.predict(new_user_input)  # predicting result for new user input
         dt_probabilistic = dt.predict_proba(new_user_input)
 
-        positive_probs = dt_probabilistic[0]  # Assuming there's only one prediction for new_user_input
+        positive_probs = dt_probabilistic[0]
+        show_result(dt_new_user_input_prediction)
 
         import matplotlib.pyplot as plt
 
         st.title("DIAGONISIS")
-        st.info(dt_new_user_input_prediction)
 
         fig, ax = plt.subplots()
-        ax.pie(dt_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        label_pie(ax, dt_probabilistic[0])
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -175,16 +186,16 @@ if submit:
         xgb_new_user_input_prediction = xgb.predict(new_user_input)  # predicting result for new user input
         xgb_probabilistic = xgb.predict_proba(new_user_input)
 
-        positive_probs = xgb_probabilistic[0]  # Assuming there's only one prediction for new_user_input
+        positive_probs = xgb_probabilistic[0]
+        show_result(xgb_new_user_input_prediction)
 
         import matplotlib.pyplot as plt
-        st.info(xgb_new_user_input_prediction)
 
 
         st.title("DIAGONISIS")
 
         fig, ax = plt.subplots()
-        ax.pie(xgb_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        label_pie(ax, xgb_probabilistic[0])
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -203,26 +214,40 @@ if submit:
     elif option == "MODEL GRAPHS":
         import matplotlib.pyplot as plt
 
-        models = ["SVM", "KNN", "Decision Tree", "XGBoost"]
-        accuracies = [87.0,87.0,92.4,91.9]
-        precisions = [87.0,88.3,85.4,96.2]
+        from sklearn.svm import SVC
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.tree import DecisionTreeClassifier
+        from xgboost import XGBClassifier
+        from sklearn.metrics import accuracy_score, precision_score
+
+        # scores are computed from the models, not typed in
+        candidates = {"SVM": SVC(), "KNN": KNeighborsClassifier(),
+                      "Decision Tree": DecisionTreeClassifier(random_state=0), "XGBoost": XGBClassifier()}
+        models, accuracies, precisions = [], [], []
+        for name, model in candidates.items():
+            pred = model.fit(x_train, y_train).predict(x_test)
+            models.append(name)
+            accuracies.append(accuracy_score(y_test, pred) * 100)
+            precisions.append(precision_score(y_test, pred) * 100)
 
         # Create a bar plot for accuracies
-        plt.figure(figsize=(8, 6))
-        plt.bar(models, accuracies,color='red')
-        plt.xlabel('Models')
-        plt.ylabel('Accuracy (%)')
-        plt.title('Accuracy Comparison')
-        st.pyplot(plt)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.bar(models, accuracies, color='red')
+        ax.set_ylim(0, 100)
+        ax.set_xlabel('Models')
+        ax.set_ylabel('Accuracy (%)')
+        ax.set_title('Accuracy Comparison')
+        st.pyplot(fig)
 
         # Create a bar plot for precisions
-        plt.figure(figsize=(8, 6))
-        plt.bar(models, precisions)
-        plt.xlabel('Models')
-        plt.ylabel('Precision (%)')
-        plt.title('Precision Comparison')
-        st.pyplot(plt)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.bar(models, precisions)
+        ax.set_ylim(0, 100)
+        ax.set_xlabel('Models')
+        ax.set_ylabel('Precision (%)')
+        ax.set_title('Precision Comparison')
+        st.pyplot(fig)
 
-        st.subheader("By Visual Comparison XGBOOST is th best")
+        st.subheader(f"Best accuracy on the test set: {models[accuracies.index(max(accuracies))]}")
 else:
     st.error("CLICK SUBMIT BUTTON")

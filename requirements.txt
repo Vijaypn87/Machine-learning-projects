@@ -2,9 +2,11 @@ pandas
 numpy
 scikit-learn
 streamlit
+streamlit-option-menu
 matplotlib
 seaborn
 xgboost
-opencv-python
-Pillow
+lightgbm
+imbalanced-learn
 joblib
+tld

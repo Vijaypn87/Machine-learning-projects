@@ -6,7 +6,6 @@ from streamlit_option_menu import option_menu
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from sklearn.feature_selection import VarianceThreshold
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 
@@ -27,8 +26,6 @@ output = df['prognosis'].unique().tolist()
 df['prognosis'] = df['prognosis'].map(c)
 
     #since there are 132 features, we'll use feature selection to eliminate unnecessary ones
-var_thres = VarianceThreshold(threshold=0)
-var_thres.fit(df)
 df = df.drop(['fluid_overload'],axis=1)#fluid_overload has single value in all of it's columns, so we can skip that
     #splitting data
 x = df.iloc[:,:-1]
@@ -79,85 +76,96 @@ dict2 = {'YES':'1','NO':'0'}
 with st.container():
     c1, c2, c3 = st.columns(3)
     with c1:
-        itching = st.selectbox('ITCHING?', options={'YES', 'NO'})
+        itching = st.selectbox('ITCHING?', options=['NO', 'YES'])
         itching = dict2[itching]
 
-        skin_rash = st.selectbox('SKIN RASH?', options={'YES', 'NO'})
+        skin_rash = st.selectbox('SKIN RASH?', options=['NO', 'YES'])
         skin_rash = dict2[skin_rash]
 
-        nodal_skin_eruptions = st.selectbox('NODAL SKIN ERUPTIONS?', options={'YES', 'NO'})
+        nodal_skin_eruptions = st.selectbox('NODAL SKIN ERUPTIONS?', options=['NO', 'YES'])
         nodal_skin_eruptions = dict2[nodal_skin_eruptions]
 
-        continuous_sneezing = st.selectbox('FREQUENT SNEEZING?', options={'YES', 'NO'})
+        continuous_sneezing = st.selectbox('FREQUENT SNEEZING?', options=['NO', 'YES'])
         continuous_sneezing = dict2[continuous_sneezing]
 
-        joint_pain = st.selectbox('JOINT PAIN?', options={'YES', 'NO'})
+        joint_pain = st.selectbox('JOINT PAIN?', options=['NO', 'YES'])
         joint_pain = dict2[joint_pain]
 
-        stomach_pain = st.selectbox('STOMACH PAIN?', options={'YES', 'NO'})
+        stomach_pain = st.selectbox('STOMACH PAIN?', options=['NO', 'YES'])
         stomach_pain = dict2[stomach_pain]
 
-        muscle_wasting = st.selectbox('MUSCLE LOSS?', options={'YES', 'NO'})
+        muscle_wasting = st.selectbox('MUSCLE LOSS?', options=['NO', 'YES'])
         muscle_wasting = dict2[muscle_wasting]
 
-        vomiting = st.selectbox('VOMITING?', options={'YES', 'NO'})
+        vomiting = st.selectbox('VOMITING?', options=['NO', 'YES'])
         vomiting = dict2[vomiting]
     with c2:
-        fatigue = st.selectbox('FATIGUE?', options={'YES', 'NO'})
+        fatigue = st.selectbox('FATIGUE?', options=['NO', 'YES'])
         fatigue = dict2[fatigue]
 
-        weight_gain = st.selectbox('WEIGHT GAIN?', options={'YES', 'NO'})
+        weight_gain = st.selectbox('WEIGHT GAIN?', options=['NO', 'YES'])
         weight_gain = dict2[weight_gain]
 
-        anxiety = st.selectbox('ANXIETY?', options={'YES', 'NO'})
+        anxiety = st.selectbox('ANXIETY?', options=['NO', 'YES'])
         anxiety = dict2[anxiety]
 
-        weight_loss = st.selectbox('WEIGHT LOSS?', options={'YES', 'NO'})
+        weight_loss = st.selectbox('WEIGHT LOSS?', options=['NO', 'YES'])
         weight_loss = dict2[weight_loss]
 
-        sunken_eyes = st.selectbox('SUNKEN EYES?', options={'YES', 'NO'})
+        sunken_eyes = st.selectbox('SUNKEN EYES?', options=['NO', 'YES'])
         sunken_eyes = dict2[sunken_eyes]
 
-        headache = st.selectbox('HEADACHE?', options={'YES', 'NO'})
+        headache = st.selectbox('HEADACHE?', options=['NO', 'YES'])
         headache = dict2[headache]
 
-        yellowish_skin = st.selectbox('YELLOWISH SKIN?', options={'YES', 'NO'})
+        yellowish_skin = st.selectbox('YELLOWISH SKIN?', options=['NO', 'YES'])
         yellowish_skin = dict2[yellowish_skin]
 
-        pain_behind_the_eyes = st.selectbox('PAIN BEHIND EYES?', options={'YES', 'NO'})
+        pain_behind_the_eyes = st.selectbox('PAIN BEHIND EYES?', options=['NO', 'YES'])
         pain_behind_the_eyes = dict2[pain_behind_the_eyes]
 
-        skin_peeling = st.selectbox('SKIN PEELING?', options={'YES', 'NO'})
+        skin_peeling = st.selectbox('SKIN PEELING?', options=['NO', 'YES'])
         skin_peeling = dict2[skin_peeling]
 
     with c3:
-        blister = st.selectbox('BLISTER?', options={'YES', 'NO'})
+        blister = st.selectbox('BLISTER?', options=['NO', 'YES'])
         blister = dict2[blister]
 
-        constipation = st.selectbox('CONSTIPATION?', options={'YES', 'NO'})
+        constipation = st.selectbox('CONSTIPATION?', options=['NO', 'YES'])
         constipation = dict2[constipation]
 
-        swelling_of_stomach = st.selectbox('SWELLING OF STOMACH?', options={'YES', 'NO'})
+        swelling_of_stomach = st.selectbox('SWELLING OF STOMACH?', options=['NO', 'YES'])
         swelling_of_stomach = dict2[swelling_of_stomach]
 
-        cramps = st.selectbox('CRAMPS?', options={'YES', 'NO'})
+        cramps = st.selectbox('CRAMPS?', options=['NO', 'YES'])
         cramps = dict2[cramps]
 
-        spinning_movements = st.selectbox('HEAD SPINNING?', options={'YES', 'NO'})
+        spinning_movements = st.selectbox('HEAD SPINNING?', options=['NO', 'YES'])
         spinning_movements = dict2[spinning_movements]
 
-        weakness_of_one_body_side = st.selectbox('WEAKNESS ON ONE SIDE OF BODY?', options={'YES', 'NO'})
+        weakness_of_one_body_side = st.selectbox('WEAKNESS ON ONE SIDE OF BODY?', options=['NO', 'YES'])
         weakness_of_one_body_side = dict2[weakness_of_one_body_side]
 
-        family_history = st.selectbox('FAMILY HISTORY AVAILABLE?', options={'YES', 'NO'})
+        family_history = st.selectbox('FAMILY HISTORY AVAILABLE?', options=['NO', 'YES'])
         family_history = dict2[family_history]
 
-        pus_filled_pimples = st.selectbox('PUS FILLED PIMPLES?', options={'YES', 'NO'})
+        pus_filled_pimples = st.selectbox('PUS FILLED PIMPLES?', options=['NO', 'YES'])
         pus_filled_pimples = dict2[pus_filled_pimples]
 
 btn = st.button('SUBMIT')
 
-new = [[itching ,skin_rash ,nodal_skin_eruptions ,continuous_sneezing ,joint_pain ,stomach_pain ,muscle_wasting ,vomiting ,fatigue ,weight_gain ,anxiety ,weight_loss ,sunken_eyes ,headache ,yellowish_skin ,pain_behind_the_eyes ,constipation ,swelling_of_stomach ,cramps ,spinning_movements ,weakness_of_one_body_side ,family_history ,pus_filled_pimples ,skin_peeling ,blister]]
+answers = {'itching': itching, 'skin_rash': skin_rash, 'nodal_skin_eruptions': nodal_skin_eruptions,
+           'continuous_sneezing': continuous_sneezing, 'joint_pain': joint_pain, 'stomach_pain': stomach_pain,
+           'muscle_wasting': muscle_wasting, 'vomiting': vomiting, 'fatigue': fatigue, 'weight_gain': weight_gain,
+           'anxiety': anxiety, 'weight_loss': weight_loss, 'sunken_eyes': sunken_eyes, 'headache': headache,
+           'yellowish_skin': yellowish_skin, 'pain_behind_the_eyes': pain_behind_the_eyes,
+           'constipation': constipation, 'swelling_of_stomach': swelling_of_stomach, 'cramps': cramps,
+           'spinning_movements': spinning_movements, 'weakness_of_one_body_side': weakness_of_one_body_side,
+           'family_history': family_history, 'pus_filled_pimples': pus_filled_pimples,
+           'skin_peeling': skin_peeling, 'blister': blister}
+#build the input row with exactly the columns (and order) the models were trained on;
+#symptoms not asked on the page are set to 0 (not present)
+new = pd.DataFrame([[int(answers.get(col, 0)) for col in x_train.columns]], columns=x_train.columns)
 
 if btn:
     if side == 'DECISION TREE':

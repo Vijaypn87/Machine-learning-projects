@@ -38,7 +38,8 @@ The repository contains projects built using different machine learning algorith
 - Random Forest
 - Support Vector Machine (SVM)
 - K-Nearest Neighbors (KNN)
-- XGBoost *(where applicable)*
+- Naive Bayes
+- XGBoost / LightGBM *(where applicable)*
 
 ---
 
@@ -84,12 +85,26 @@ pip install -r requirements.txt
 
 ### 4. Run a Project
 
-Example:
+Each project is in its own folder. Go into the folder and run its app file, for example:
 
 ```bash
-cd Heart-Disease-Prediction
-streamlit run app.py
+cd Brainstroke-Predictor
+streamlit run app_brainstroke.py
 ```
+
+| Project | Command (run inside the project folder) |
+|---|---|
+| Brainstroke Predictor | `streamlit run app_brainstroke.py` |
+| Crop Recommendation | `streamlit run app_crop.py` |
+| Insurance Fraud Prediction | `streamlit run app_insurance.py` |
+| Landslide Prediction | `streamlit run app_landslide.py` |
+| Lung Cancer Prediction | `streamlit run app_lungcancer.py` |
+| Multi Disease Predictor | `streamlit run app_multidisease.py` |
+| Rainfall Prediction | `streamlit run app_rainfall.py` |
+| URL Malware Detector | `streamlit run app_pishing.py` |
+
+> **Note:** the URL Malware Detector and the Rainfall Prediction SVM model train their models on first run
+> (this can take a few minutes) and save them next to the app, so later runs start quickly.
 
 ---
 

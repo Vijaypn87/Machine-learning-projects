@@ -1,0 +1,5 @@
+
+# trained model files created on first run
+*.pkl
+*.sav
+__pycache__/

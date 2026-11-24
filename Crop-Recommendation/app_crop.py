@@ -3,7 +3,9 @@ import pandas as pd
 
 data = pd.read_csv("G7_crop.csv")  # loading the dataset
 
-data['label'] = data['label'].map({"rice": 1, "maize": 0,"chickpea":2, "kidneybeans":3, "pigeonpeas":4, "mothbeans":5})
+CROPS = {"rice": 1, "maize": 0,"chickpea":2, "kidneybeans":3, "pigeonpeas":4, "mothbeans":5}
+data['label'] = data['label'].map(CROPS)
+CROP_NAMES = [name for name, code in sorted(CROPS.items(), key=lambda item: item[1])]  # name for code 0, 1, 2...
 
 print(data.columns[data.isna().any()])  # checking for NAN values
 
@@ -64,21 +66,21 @@ if submit:
         # Plotting the pie chart
         import matplotlib.pyplot as plt
 
-        st.title("DIAGONISIS")
+        st.title("RECOMMENDATION")
         if svc_new_user_input_prediction[0]==1:
-            st.info("predicated crop is rice")
+            st.info("predicted crop is rice")
         elif svc_new_user_input_prediction[0]==0:
-            st.info("predicated crop is maize")
+            st.info("predicted crop is maize")
         elif svc_new_user_input_prediction[0] == 2:
-            st.info("predicated crop is chickpea")
+            st.info("predicted crop is chickpea")
         elif svc_new_user_input_prediction[0] == 3:
-            st.info("predicated crop is kidneybeans")
+            st.info("predicted crop is kidneybeans")
         elif svc_new_user_input_prediction[0] == 4:
-            st.info("predicated crop is pigeonpeas")
+            st.info("predicted crop is pigeonpeas")
         elif svc_new_user_input_prediction[0] == 5:
-            st.info("predicated crop is mothbeans ")
+            st.info("predicted crop is mothbeans ")
         fig, ax = plt.subplots()
-        ax.pie(svc_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(svc_probabilistic[0], labels=CROP_NAMES, autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -107,21 +109,21 @@ if submit:
 
         import matplotlib.pyplot as plt
 
-        st.title("DIAGONISIS")
+        st.title("RECOMMENDATION")
         if knn_new_user_input_prediction[0]==1:
-            st.info("predicated crop is rice")
+            st.info("predicted crop is rice")
         elif knn_new_user_input_prediction[0]==0:
-            st.info("predicated crop is maize")
+            st.info("predicted crop is maize")
         elif knn_new_user_input_prediction[0] == 2:
-            st.info("predicated crop is chickpea")
+            st.info("predicted crop is chickpea")
         elif knn_new_user_input_prediction[0] == 3:
-            st.info("predicated crop is kidneybeans")
+            st.info("predicted crop is kidneybeans")
         elif knn_new_user_input_prediction[0] == 4:
-            st.info("predicated crop is pigeonpeas")
+            st.info("predicted crop is pigeonpeas")
         elif knn_new_user_input_prediction[0] == 5:
-            st.info("predicated crop is mothbeans ")
+            st.info("predicted crop is mothbeans ")
         fig, ax = plt.subplots()
-        ax.pie(knn_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(knn_probabilistic[0], labels=CROP_NAMES, autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -129,18 +131,6 @@ if submit:
         st.pyplot(fig)
 
         st.title("MODEL PARAMETERS")
-        if knn_new_user_input_prediction[0] == 1:
-            st.info("predicated crop is rice")
-        elif knn_new_user_input_prediction[0] == 0:
-            st.info("predicated crop is maize")
-        elif knn_new_user_input_prediction[0] == 2:
-            st.info("predicated crop is chickpea")
-        elif knn_new_user_input_prediction[0] == 3:
-            st.info("predicated crop is kidneybeans")
-        elif knn_new_user_input_prediction[0] == 4:
-            st.info("predicated crop is pigeonpeas")
-        elif knn_new_user_input_prediction[0] == 5:
-            st.info("predicated crop is mothbeans ")
 
         from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
@@ -161,22 +151,22 @@ if submit:
 
         import matplotlib.pyplot as plt
 
-        st.title("DIAGONISIS")
+        st.title("RECOMMENDATION")
         if  dt_new_user_input_prediction[0] == 1:
-            st.info("predicated crop is rice")
+            st.info("predicted crop is rice")
         elif  dt_new_user_input_prediction[0] == 0:
-            st.info("predicated crop is maize")
+            st.info("predicted crop is maize")
         elif  dt_new_user_input_prediction[0] == 2:
-            st.info("predicated crop is chickpea")
+            st.info("predicted crop is chickpea")
         elif  dt_new_user_input_prediction[0] == 3:
-            st.info("predicated crop is kidneybeans")
+            st.info("predicted crop is kidneybeans")
         elif  dt_new_user_input_prediction[0] == 4:
-            st.info("predicated crop is pigeonpeas")
+            st.info("predicted crop is pigeonpeas")
         elif  dt_new_user_input_prediction[0] == 5:
-            st.info("predicated crop is mothbeans ")
+            st.info("predicted crop is mothbeans ")
 
         fig, ax = plt.subplots()
-        ax.pie(dt_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(dt_probabilistic[0], labels=CROP_NAMES, autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -204,21 +194,21 @@ if submit:
 
         import matplotlib.pyplot as plt
 
-        st.title("DIAGONISIS")
+        st.title("RECOMMENDATION")
         if xgb_new_user_input_prediction[0] == 1:
-            st.info("predicated crop is rice")
+            st.info("predicted crop is rice")
         elif  xgb_new_user_input_prediction[0] == 0:
-            st.info("predicated crop is maize")
+            st.info("predicted crop is maize")
         elif  xgb_new_user_input_prediction[0] == 2:
-            st.info("predicated crop is chickpea")
+            st.info("predicted crop is chickpea")
         elif  xgb_new_user_input_prediction[0] == 3:
-            st.info("predicated crop is kidneybeans")
+            st.info("predicted crop is kidneybeans")
         elif  xgb_new_user_input_prediction[0] == 4:
-            st.info("predicated crop is pigeonpeas")
+            st.info("predicted crop is pigeonpeas")
         elif  xgb_new_user_input_prediction[0] == 5:
-            st.info("predicated crop is mothbeans ")
+            st.info("predicted crop is mothbeans ")
         fig, ax = plt.subplots()
-        ax.pie(xgb_probabilistic[0], autopct='%1.1f%%', startangle=90)
+        ax.pie(xgb_probabilistic[0], labels=CROP_NAMES, autopct='%1.1f%%', startangle=90)
         ax.set_title('Distribution of Predicted Probabilities')
         ax.axis('equal')
 
@@ -235,15 +225,29 @@ if submit:
     elif option == "MODEL GRAPHS":
         import matplotlib.pyplot as plt
 
-        models = ["SVM", "KNN", "Decision Tree", "XGBoost"]
-        accuracies = [98.3,99.1,1.0,1.0]
+        from sklearn.metrics import accuracy_score, precision_score
+        from sklearn.svm import SVC
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.tree import DecisionTreeClassifier
+        from xgboost import XGBClassifier
+        # scores are computed from the models on the test set, not typed in
+        candidates = {"SVM": SVC(), "KNN": KNeighborsClassifier(), "Decision Tree": DecisionTreeClassifier(random_state=0), "XGBoost": XGBClassifier()}
+        models, accuracies, precisions = [], [], []
+        for name, model in candidates.items():
+            pred = model.fit(x_train, y_train).predict(x_test)
+            models.append(name)
+            accuracies.append(accuracy_score(y_test, pred) * 100)
+            precisions.append(precision_score(y_test, pred, average='macro', zero_division=0) * 100)
 
-        # Create a bar plot for accuracies
-        plt.figure(figsize=(8, 6))
-        plt.bar(models, accuracies,color='red')
-        plt.xlabel('Models')
-        plt.ylabel('Accuracy (%)')
-        plt.title('Accuracy Comparison')
-        st.pyplot(plt)
+        for values, metric, color in [(accuracies, 'Accuracy', 'red'), (precisions, 'Precision', None)]:
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.bar(models, values, color=color)
+            ax.set_ylim(0, 100)
+            ax.set_xlabel('Models')
+            ax.set_ylabel(metric + ' (%)')
+            ax.set_title(metric + ' Comparison')
+            st.pyplot(fig)
+
+        st.subheader(f"Best accuracy on the test set: {models[accuracies.index(max(accuracies))]}")
 else:
     st.error("CLICK SUBMIT BUTTON")
